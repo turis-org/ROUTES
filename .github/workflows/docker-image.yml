@@ -2,21 +2,18 @@ name: Docker Image CI
 
 on:
   push:
-    branches: [ "master" ]
+    branches: [ "master", "develop" ]
   pull_request:
-    branches: [ "master" ]
-
+    branches: [ "master", "develop"]
 jobs:
-
   build:
-
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Set up Docker Compose
-      uses: docker/setup-compose-action@v3
-
-    - name: Start container
-      run: docker-compose up -d
+     - uses: actions/checkout@v4
+     
+     - name: Set up Docker Compose
+       uses: docker/setup-compose-action@v1
+       
+     - name: Run Docker Compose
+       run: docker compose --env-file .env up -d --build

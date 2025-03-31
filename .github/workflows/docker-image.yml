@@ -10,13 +10,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        
-      - name: Set up Docker Compose
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y docker-compose-plugin
-  
-      - name: Run Docker Compose
-        run: docker-compose --env-file .env up -d
+     - uses: actions/checkout@v4
+     
+     - name: Set up Docker Compose
+       uses: docker/setup-compose-action@v1
+       
+     - name: Run Docker Compose
+       run: docker-compose --env-file .env up -d

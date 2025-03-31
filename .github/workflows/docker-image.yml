@@ -16,4 +16,4 @@ jobs:
        uses: docker/setup-compose-action@v1
        
      - name: Run Docker Compose
-       run: docker-compose --env-file .env up -d
+       run: docker compose --env-file .env up -d --build

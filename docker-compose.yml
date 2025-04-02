@@ -1,7 +1,8 @@
+# NOTE: set different password and login for all replicas and replicas backup
 services:  
   postgres:
     image: pgrouting/pgrouting:17-3.5-main
-    container_name: turis_db
+    container_name: routes_db
     environment:
       - POSTGRES_PASSWORD=${PG_PASSWORD}
       - POSTGRES_USER=${PG_USER}
@@ -22,5 +23,102 @@ services:
       start_period: 10s
     restart: always
 
+  postgres_replica1:
+    image: pgrouting/pgrouting:17-3.5-main
+    container_name: routes_db_repl1
+    environment:
+      - POSTGRES_PASSWORD=${PG_PASSWORD}
+      - POSTGRES_USER=${PG_USER}
+      - POSTGRES_DB=${PG_DATABASE}
+    ports:
+      - ${PGR1_PORT}:${PG_PORT}
+    volumes:
+      - replica1:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${PG_USER} -d ${PG_DATABASE}"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: always
+
+  postgres_replica2:
+    image: pgrouting/pgrouting:17-3.5-main
+    container_name: routes_db_repl2
+    environment:
+      - POSTGRES_PASSWORD=${PG_PASSWORD}
+      - POSTGRES_USER=${PG_USER}
+      - POSTGRES_DB=${PG_DATABASE}
+    ports:
+      - ${PGR2_PORT}:${PG_PORT}
+    volumes:
+      - replica2:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${PG_USER} -d ${PG_DATABASE}"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: always
+
+  postgres_replica1_backup:
+    image: pgrouting/pgrouting:17-3.5-main
+    container_name: routes_db_repl1_backup
+    environment:
+      - POSTGRES_PASSWORD=${PG_PASSWORD}
+      - POSTGRES_USER=${PG_USER}
+      - POSTGRES_DB=${PG_DATABASE}
+    ports:
+      - ${PGR1B_PORT}:${PG_PORT}
+    volumes:
+      - replica_backup1:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${PG_USER} -d ${PG_DATABASE}"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: always
+
+  postgres_replica2_backup:
+    image: pgrouting/pgrouting:17-3.5-main
+    container_name: routes_db_repl2_backup
+    environment:
+      - POSTGRES_PASSWORD=${PG_PASSWORD}
+      - POSTGRES_USER=${PG_USER}
+      - POSTGRES_DB=${PG_DATABASE}
+    ports:
+      - ${PGR2B_PORT}:${PG_PORT}
+    volumes:
+      - replica_backup2:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${PG_USER} -d ${PG_DATABASE}"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: always
+
+
 volumes:
   pg_data_container:
+  replica1:
+  replica2:
+  replica_backup1:
+  replica_backup2:

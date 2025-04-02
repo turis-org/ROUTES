@@ -1,6 +1,6 @@
 services:  
   postgres:
-    image: postgres:latest
+    image: pgrouting/pgrouting:17-3.5-main
     container_name: turis_db
     environment:
       - POSTGRES_PASSWORD=${PG_PASSWORD}

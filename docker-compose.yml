@@ -7,10 +7,17 @@ services:
       - POSTGRES_PASSWORD=${PG_PASSWORD}
       - POSTGRES_USER=${PG_USER}
       - POSTGRES_DB=${PG_DATABASE}
+      - IS_MASTER="true"
+      - IS_SYNC_REPL1="false"
+      - IS_SYNC_REPL2="false"
+      - IS_REPL1="false"
+      - IS_REPL2="false"
     ports:
       - ${PG_PORT}:${PG_PORT}
     volumes:
       - pg_data_container:/var/lib/postgresql/data
+      - ./pg_conf/master.conf:/etc/postgresql/postgresql.conf
+      - ./docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
     healthcheck:
       test:
         [
@@ -22,6 +29,9 @@ services:
       retries: 5
       start_period: 10s
     restart: always
+    command: >
+      -c synchronous_standby_names='FIRST 2 (routes_db_repl1, routes_db_repl2)'
+#      -c config_file=master.conf
 
   postgres_replica1:
     image: pgrouting/pgrouting:17-3.5-main
@@ -30,10 +40,17 @@ services:
       - POSTGRES_PASSWORD=${PG_PASSWORD}
       - POSTGRES_USER=${PG_USER}
       - POSTGRES_DB=${PG_DATABASE}
+      - IS_MASTER="false"
+      - IS_SYNC_REPL1="true"
+      - IS_SYNC_REPL2="false"
+      - IS_REPL1="false"
+      - IS_REPL2="false"
     ports:
       - ${PGR1_PORT}:${PG_PORT}
     volumes:
       - replica1:/var/lib/postgresql/data
+      - ./pg_conf/replica1.conf:/etc/postgresql/postgresql.conf
+      - ./docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
     healthcheck:
       test:
         [
@@ -45,6 +62,9 @@ services:
       retries: 5
       start_period: 10s
     restart: always
+    command: >
+      -c primary_conninfo='host=routes_db port=${PG_PORT} user=${REPL_USER} password=${REPL_PASSWD} application_name=routes_db_repl1'
+#      -c config_file=replica.conf
 
   postgres_replica2:
     image: pgrouting/pgrouting:17-3.5-main
@@ -53,10 +73,17 @@ services:
       - POSTGRES_PASSWORD=${PG_PASSWORD}
       - POSTGRES_USER=${PG_USER}
       - POSTGRES_DB=${PG_DATABASE}
+      - IS_MASTER="false"
+      - IS_SYNC_REPL1="false"
+      - IS_SYNC_REPL2="true"
+      - IS_REPL1="false"
+      - IS_REPL2="false"
     ports:
       - ${PGR2_PORT}:${PG_PORT}
     volumes:
       - replica2:/var/lib/postgresql/data
+      - ./pg_conf/replica2.conf:/etc/postgresql/postgresql.conf
+      - ./docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
     healthcheck:
       test:
         [
@@ -68,6 +95,9 @@ services:
       retries: 5
       start_period: 10s
     restart: always
+    command: >
+      -c primary_conninfo='host=routes_db port=${PG_PORT} user=${REPL_USER} password=${REPL_PASSWD} application_name=routes_db_repl2'
+#      -c config_file=replica.conf
 
   postgres_replica1_backup:
     image: pgrouting/pgrouting:17-3.5-main
@@ -76,10 +106,17 @@ services:
       - POSTGRES_PASSWORD=${PG_PASSWORD}
       - POSTGRES_USER=${PG_USER}
       - POSTGRES_DB=${PG_DATABASE}
+      - IS_MASTER="false"
+      - IS_SYNC_REPL1="false"
+      - IS_SYNC_REPL2="false"
+      - IS_REPL1="true"
+      - IS_REPL2="false"
     ports:
       - ${PGR1B_PORT}:${PG_PORT}
     volumes:
       - replica_backup1:/var/lib/postgresql/data
+      - ./pg_conf/backup_replica.conf:/etc/postgresql/postgresql.conffile
+      - ./docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
     healthcheck:
       test:
         [
@@ -91,6 +128,9 @@ services:
       retries: 5
       start_period: 10s
     restart: always
+    command: >
+      -c primary_conninfo='host=routes_db_repl1 port=${PGR1_PORT} user=${REPL_USER} password=${REPL_PASSWD} application_name=routes_db_repl1_backup'
+#      -c config_file=backup_replica.conf
 
   postgres_replica2_backup:
     image: pgrouting/pgrouting:17-3.5-main
@@ -99,10 +139,17 @@ services:
       - POSTGRES_PASSWORD=${PG_PASSWORD}
       - POSTGRES_USER=${PG_USER}
       - POSTGRES_DB=${PG_DATABASE}
+      - IS_MASTER="false"
+      - IS_SYNC_REPL1="false"
+      - IS_SYNC_REPL2="false"
+      - IS_REPL1="false"
+      - IS_REPL2="true"
     ports:
       - ${PGR2B_PORT}:${PG_PORT}
     volumes:
       - replica_backup2:/var/lib/postgresql/data
+      - ./pg_conf/backup_replica.conf:/etc/postgresql/postgresql.conf
+      - ./docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
     healthcheck:
       test:
         [
@@ -114,7 +161,9 @@ services:
       retries: 5
       start_period: 10s
     restart: always
-
+    command: >
+      -c primary_conninfo='host=routes_db_repl2 port=${PGR2_PORT} user=${REPL_USER} password=${REPL_PASSWD} application_name=routes_db_repl2_backup'
+#      -c config_file=backup_replica.conf
 
 volumes:
   pg_data_container:
@@ -122,3 +171,8 @@ volumes:
   replica2:
   replica_backup1:
   replica_backup2:
+  #pg_conf/master.conf:
+  #pg_conf/replica1.conf:
+  #pg_conf/replica2.conf:
+  #pg_conf:
+

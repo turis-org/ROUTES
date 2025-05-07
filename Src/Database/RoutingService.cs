@@ -6,6 +6,7 @@ using Dapper;
 using NetTopologySuite.Geometries;
 using Npgsql;
 using NpgsqlTypes;
+using Database.Entities;
 
 namespace Database;
 
@@ -21,10 +22,11 @@ public class RoutingService
         public long NodeId { get; set; }
     }
     
-    public RouteService(string connectionString)
+    public RoutingService(string connectionString)
     {
         NpgsqlConnection.GlobalTypeMapper.UseNetTopologySuite();
         conn = new NpgsqlConnection(connectionString);
+        conn.Open();
     }
 
     ~RoutingService()
@@ -115,9 +117,9 @@ public class RoutingService
                     edge_id AS EdgeId,
                     seq_order AS Sequence
                   FROM route_segments
-                  WHERE route_id = @RouteId
+                  WHERE route_name = @RouteName
                   ORDER BY seq_order",
-                new { RouteId = routeId })).ToList();
+                new { RouteName = name })).ToList();
         }
 
         return route;

@@ -1,4 +1,4 @@
-namespace Database;
+namespace Database.Entities;
 
 public class RouteSegment
 {

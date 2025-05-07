@@ -2,13 +2,13 @@ using System;
 using System.Collections.Generic;
 using NetTopologySuite.Geometries;
 
-namespace Database;
+namespace Database.Entities;
 
 public class Route
 {
     public int RouteId { get; set; }
-    public string Name { get; set; }
-    public LineString Geometry { get; set; }
+    public required string Name { get; set; }
+    public required LineString Geometry { get; set; }
     public DateTime CreatedAt { get; set; }
-    public List<RouteSegment> Segments { get; set; }
+    public required List<RouteSegment> Segments { get; set; }
 }

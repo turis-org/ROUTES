@@ -42,6 +42,7 @@ CREATE TABLE IF NOT EXISTS routes (
 );
 
 CREATE INDEX routes_geom_idx ON routes USING GIST (geom);
+CREATE INDEX routes_route_name_idx ON routes(route_name);
 
 CREATE TABLE route_segments (
     route_id INT REFERENCES routes(route_id) ON DELETE CASCADE,

@@ -21,9 +21,6 @@ echo $map
 nohup osm2pgsql -F /tmp/flat_node -d $POSTGRES_DB -U $POSTGRES_USER --cache=1000 --number-processes=4 --create --multi-geometry --slim --drop --hstore --proj 3857 /tmp/maps/$map
 done
 
-# Очистка
-apt remove -y --autoremove osm2pgsql
-
 if [ ${IS_MASTER} = "true" ]; then
 
 	cat > "$PGDATA/pg_hba.conf" <<EOF

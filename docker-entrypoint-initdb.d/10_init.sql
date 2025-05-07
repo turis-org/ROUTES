@@ -1,4 +1,4 @@
--- Создание таблицы для маршрутизации
+-- Создание таблицы для маршрутизации (каждая запись - ребро - участок дороги между 2 узлами)
 CREATE TABLE IF NOT EXISTS routing_roads AS
 SELECT osm_id, name, highway, way AS geom
 FROM planet_osm_line
@@ -23,10 +23,29 @@ UPDATE routing_roads SET
            ELSE 50.0 -- городские дороги
          END;
 
--- Создание топологии
+-- Создание топологии (заполняет таблицу routing_roads и создаёт ещё одну таблицу routing_roads_vertices_pgr с вершинами графа (source и target как раз ссылки на них))
 SELECT pgr_createTopology('routing_roads', 0.0001, 'geom', 'id');
 
 -- Создание индексов
 CREATE INDEX IF NOT EXISTS routing_roads_geom_idx ON routing_roads USING GIST(geom);
 CREATE INDEX IF NOT EXISTS routing_roads_source_idx ON routing_roads(source);
 CREATE INDEX IF NOT EXISTS routing_roads_target_idx ON routing_roads(target);
+
+-- Создание таблицы маршрутов
+
+
+CREATE TABLE IF NOT EXISTS routes (
+    route_id SERIAL PRIMARY KEY,
+    route_name VARCHAR(255) NOT NULL,
+    geom GEOMETRY(LINESTRING, 4326), -- Геометрия маршрута
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX routes_geom_idx ON routes USING GIST (geom);
+
+CREATE TABLE route_segments (
+    route_id INT REFERENCES routes(route_id) ON DELETE CASCADE,
+    edge_id BIGINT NOT NULL, -- ID из таблицы routing_roads
+    seq_order INT NOT NULL, -- Порядок следования сегментов
+    PRIMARY KEY (route_id, edge_id, seq_order)
+);

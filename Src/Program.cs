@@ -1,3 +1,6 @@
+using Database;
+using Npgsql;
+
 namespace Src;
 
 public class Program
@@ -5,6 +8,22 @@ public class Program
     public static void Main(string [] args)
     {
         var builder = WebApplication.CreateBuilder(args);
+        builder.Configuration.AddEnvironmentVariables();
+
+        // Получение строки подключения
+        var connectionString = new NpgsqlConnectionStringBuilder
+        {
+            Host = builder.Configuration["DB_HOST"] ?? "localhost",
+            Port = int.Parse(builder.Configuration["PG_PORT"] ?? "5432"),
+            Database = builder.Configuration["PG_DATABASE"],
+            Username = builder.Configuration["PG_USER"],
+            Password = builder.Configuration["PG_PASSWORD"],
+            Pooling = bool.Parse(builder.Configuration["DB_POOLING"] ?? "true"),
+            CommandTimeout = int.Parse(builder.Configuration["DB_TIMEOUT"] ?? "30")
+        }.ToString();
+
+        // Регистрация сервиса
+        builder.Services.AddScoped<RoutingService>(_ => new RoutingService(connectionString));
 
         ConfigureServices(builder.Services);
 

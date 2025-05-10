@@ -50,3 +50,7 @@ CREATE TABLE route_segments (
     seq_order INT NOT NULL, -- Порядок следования сегментов
     PRIMARY KEY (route_id, edge_id, seq_order)
 );
+
+ALTER TABLE routing_roads_vertices_pgr 
+ALTER COLUMN the_geom TYPE Geometry(Point, 4326)
+USING ST_Transform(the_geom, 4326);

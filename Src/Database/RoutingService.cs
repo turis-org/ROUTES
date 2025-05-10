@@ -7,6 +7,7 @@ using NetTopologySuite.Geometries;
 using Npgsql;
 using NpgsqlTypes;
 using Database.Entities;
+using NetTopologySuite.IO;
 
 namespace Database;
 
@@ -44,7 +45,7 @@ public class RoutingService
         {
             var routeId = await conn.ExecuteScalarAsync<int>(
                 @"INSERT INTO routes (route_name, geom)
-                  VALUES (@Name, ST_GeomFromEWKB(@Geometry))
+                  VALUES (@Name, ST_SetSRID(ST_GeomFromEWKB(@Geometry), 4326))
                   RETURNING route_id",
                 new { route.Name, Geometry = route.Geometry.AsBinary() },
                 transaction);
@@ -185,9 +186,14 @@ public class RoutingService
         {
             var vertexId = await conn.ExecuteScalarAsync<long>(
                 @"SELECT id
-                  FROM routing_roads_vertices_pgr
-                  ORDER BY the_geom <-> ST_SetSRID(ST_Point(@Lon, @Lat), 4326)
-                  LIMIT 1",
+                FROM routing_roads_vertices_pgr
+                WHERE ST_DWithin(
+                    the_geom,
+                    ST_SetSRID(ST_Point(@Lon, @Lat), 4326),
+                    100
+                )
+                ORDER BY the_geom <-> ST_SetSRID(ST_Point(@Lon, @Lat), 4326)
+                LIMIT 1",
                 new { Lat = point.Y, Lon = point.X });
             
             vertices.Add(vertexId);
@@ -220,11 +226,19 @@ public class RoutingService
         // Собираем геометрию
         var edges = result.Select(r => r.EdgeId).Distinct().ToList();
         
-        var geometry = await conn.QuerySingleAsync<LineString>(
+        var wkb = await conn.QuerySingleAsync<byte[]>(
+            @"SELECT ST_AsBinary(ST_Transform(ST_LineMerge(ST_Collect(geom)), 4326)) AS geom
+      FROM routing_roads
+      WHERE id = ANY(@Edges)",
+            new { Edges = edges });
+
+        var geometry = new WKBReader().Read(wkb) as LineString;
+        
+        /*var geometry = await conn.QuerySingleAsync<LineString>(
             @"SELECT ST_LineMerge(ST_Collect(geom)) AS geom
               FROM routing_roads
               WHERE id = ANY(@Edges)",
-            new { Edges = edges });
+            new { Edges = edges });*/
 
         // Создаем маршрут
         var route = new Route
@@ -244,5 +258,47 @@ public class RoutingService
 
         route.RouteId = await CreateRoute(route);
         return route;
+    }
+    
+    public async Task<List<Route>> FindNearestRoutesAsync(double longitude, double latitude, 
+        int limit = 1, double maxDistanceMeters = 1000)
+    {
+        // Получаем ближайшие маршруты в пределах maxDistanceMeters
+        var routes = (await conn.QueryAsync<Route>(
+                @"SELECT 
+            route_id AS RouteId,
+            route_name AS Name,
+            geom AS Geometry,
+            created_at AS CreatedAt
+          FROM routes
+          WHERE ST_Distance(
+            geom::geography,
+            ST_SetSRID(ST_MakePoint(@Lon, @Lat), 4326)::geography) < @MaxDistance
+          ORDER BY ST_Distance(geom::geography, ST_SetSRID(ST_MakePoint(@Lon, @Lat), 4326)::geography) ASC
+          LIMIT @Limit",
+                new { 
+                    Lon = longitude, 
+                    Lat = latitude, 
+                    Limit = limit,
+                    MaxDistance = maxDistanceMeters
+                }))
+            .ToList();
+            
+        // Для каждого маршрута загружаем сегменты
+        foreach (var route in routes)
+        {
+            route.Segments = (await conn.QueryAsync<RouteSegment>(
+                    @"SELECT 
+                route_id AS RouteId,
+                edge_id AS EdgeId,
+                seq_order AS Sequence
+              FROM route_segments
+              WHERE route_id = @RouteId
+              ORDER BY seq_order",
+                    new { RouteId = route.RouteId }))
+                .ToList();
+        }
+
+        return routes;
     }
 }

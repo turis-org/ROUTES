@@ -10,7 +10,7 @@ using Database.Entities;
 
 namespace Database;
 
-public class RoutingService
+public class RoutingService : IRoutingService
 {
     private Npgsql.NpgsqlConnection conn;
 
@@ -97,7 +97,7 @@ public class RoutingService
         return route;
     }
 
-    public async Task<Route> GetRouteByName(String name)
+    public async Task<Route> GetRouteByName(string name)
     {
         var route = await conn.QuerySingleOrDefaultAsync<Route>(
             @"SELECT 

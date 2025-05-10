@@ -1,12 +1,20 @@
+using System.Text.Json;
+using Database;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Src.Controllers;
 
 [ApiController]
-[Route("request/[controller]")]
-public class RouteController : ControllerBase
+[Route("api/[controller]")]
+public class RouteController(IRoutingService service) : ControllerBase
 {
-    // выдаст результат при localhost:port/request/route/hello
+    private IRoutingService _service = service; 
+    // выдаст результат при localhost:port/api/route/hello
     [HttpGet("hello")]
     public IActionResult GetHello() => Ok("Hello World");
+
+    public IActionResult GetRoute(string name)
+    {
+        return Ok(JsonSerializer.Serialize(_service.GetRouteByName(name)));
+    }
 }

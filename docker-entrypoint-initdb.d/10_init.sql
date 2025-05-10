@@ -24,7 +24,7 @@ UPDATE routing_roads SET
          END;
 
 -- Создание топологии (заполняет таблицу routing_roads и создаёт ещё одну таблицу routing_roads_vertices_pgr с вершинами графа (source и target как раз ссылки на них))
-SELECT pgr_createTopology('routing_roads', 0.0001, 'geom', 'id');
+SELECT pgr_createTopology('routing_roads', 0.00001, 'geom', 'id');
 
 -- Создание индексов
 CREATE INDEX IF NOT EXISTS routing_roads_geom_idx ON routing_roads USING GIST(geom);

@@ -4,12 +4,13 @@
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <OutputType>Exe</OutputType>
+    <OutputType>WinExe</OutputType>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="dapper" Version="2.1.66" />
-    <PackageReference Include="DotNetEnv" Version="3.1.1" />
+    <PackageReference Include="dotnetenv" Version="3.1.1" />
+    <PackageReference Include="GeoJSON.Net" Version="1.4.1" />
     <PackageReference Include="NetTopologySuite" Version="2.6.0" />
     <PackageReference Include="npgsql" Version="9.0.3" />
     <PackageReference Include="Npgsql.NetTopologySuite" Version="9.0.3" />

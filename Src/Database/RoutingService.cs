@@ -183,7 +183,8 @@ public class RoutingService
         // Находим ближайшие вершины
         var vertices = new List<long>();
         foreach (var point in points)
-        {
+        {   
+            Console.WriteLine(point.Y + " " + point.X);
             var vertexId = await conn.ExecuteScalarAsync<long>(
                 @"SELECT id
                 FROM routing_roads_vertices_pgr
@@ -199,11 +200,16 @@ public class RoutingService
             vertices.Add(vertexId);
         }
 
+        Console.WriteLine(vertices.Count);
+
         // Вычисляем маршрут
         var parameters = new {
             Vertices = vertices,
             PathsCount = vertices.Count - 1
         };
+
+        Console.WriteLine(vertices.ToArray()[0]);
+        Console.WriteLine(vertices.ToArray()[1]);
 
         var result = await conn.QueryAsync<PathSegment>(
             @"WITH dijkstra AS (
@@ -221,24 +227,20 @@ public class RoutingService
                 node AS NodeId
             FROM dijkstra
             WHERE edge > 0",
-            parameters);
+            new { Vertices = vertices.ToArray() });
+
+        Console.WriteLine(result.First().EdgeId);
 
         // Собираем геометрию
-        var edges = result.Select(r => r.EdgeId).Distinct().ToList();
+        var edges = result.Select(r => r.EdgeId).Distinct().ToArray();
         
-        var wkb = await conn.QuerySingleAsync<byte[]>(
+        var byteGeometry = await conn.QuerySingleAsync<byte[]>(
             @"SELECT ST_AsBinary(ST_Transform(ST_LineMerge(ST_Collect(geom)), 4326)) AS geom
-      FROM routing_roads
-      WHERE id = ANY(@Edges)",
-            new { Edges = edges });
-
-        var geometry = new WKBReader().Read(wkb) as LineString;
-        
-        /*var geometry = await conn.QuerySingleAsync<LineString>(
-            @"SELECT ST_LineMerge(ST_Collect(geom)) AS geom
               FROM routing_roads
               WHERE id = ANY(@Edges)",
-            new { Edges = edges });*/
+            new { Edges = edges });
+
+        var geometry = new WKBReader().Read(byteGeometry) as LineString;
 
         // Создаем маршрут
         var route = new Route

@@ -13,6 +13,7 @@ public class RouteController(IRoutingService service) : ControllerBase
     [HttpGet("hello")]
     public IActionResult GetHello() => Ok("Hello World");
 
+    [HttpGet("get_route")]
     public IActionResult GetRoute(string name)
     {
         return Ok(JsonSerializer.Serialize(_service.GetRouteByName(name)));

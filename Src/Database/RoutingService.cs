@@ -45,7 +45,7 @@ public class RoutingService
         {
             var routeId = await conn.ExecuteScalarAsync<int>(
                 @"INSERT INTO routes (route_name, geom)
-                  VALUES (@Name, ST_GeomFromEWKB(@Geometry))
+                  VALUES (@Name, ST_SetSRID(ST_GeomFromEWKB(@Geometry), 4326))
                   RETURNING route_id",
                 new { route.Name, Geometry = route.Geometry.AsBinary() },
                 transaction);
@@ -260,5 +260,47 @@ public class RoutingService
 
         route.RouteId = await CreateRoute(route);
         return route;
+    }
+    
+    public async Task<List<Route>> FindNearestRoutesAsync(double longitude, double latitude, 
+        int limit = 1, double maxDistanceMeters = 1000)
+    {
+        // Получаем ближайшие маршруты в пределах maxDistanceMeters
+        var routes = (await conn.QueryAsync<Route>(
+                @"SELECT 
+            route_id AS RouteId,
+            route_name AS Name,
+            geom AS Geometry,
+            created_at AS CreatedAt
+          FROM routes
+          WHERE ST_Distance(
+            geom::geography,
+            ST_SetSRID(ST_MakePoint(@Lon, @Lat), 4326)::geography) < @MaxDistance
+          ORDER BY ST_Distance(geom::geography, ST_SetSRID(ST_MakePoint(@Lon, @Lat), 4326)::geography) ASC
+          LIMIT @Limit",
+                new { 
+                    Lon = longitude, 
+                    Lat = latitude, 
+                    Limit = limit,
+                    MaxDistance = maxDistanceMeters
+                }))
+            .ToList();
+            
+        // Для каждого маршрута загружаем сегменты
+        foreach (var route in routes)
+        {
+            route.Segments = (await conn.QueryAsync<RouteSegment>(
+                    @"SELECT 
+                route_id AS RouteId,
+                edge_id AS EdgeId,
+                seq_order AS Sequence
+              FROM route_segments
+              WHERE route_id = @RouteId
+              ORDER BY seq_order",
+                    new { RouteId = route.RouteId }))
+                .ToList();
+        }
+
+        return routes;
     }
 }

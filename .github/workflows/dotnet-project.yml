@@ -27,6 +27,17 @@ jobs:
       - name: Create results directory
         run: mkdir -p ${{ env.TEST_RESULTS_DIR }}
 
+      - name: Set up Docker Compose
+        uses: docker/setup-compose-action@v1
+       
+      - name: Run Docker Compose
+        run: docker compose --env-file .env up -d --build
+
+      # - name: Start PostgreSQL
+      #   run: |
+      #     docker-compose -f docker-compose.yml up -d postgres
+      #     sleep 10  # Ожидание старта БД
+
       - name: Run unit tests with results
         run: |
           cd Tests/Database.Tests

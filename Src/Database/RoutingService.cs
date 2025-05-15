@@ -7,6 +7,7 @@ using NetTopologySuite.Geometries;
 using Npgsql;
 using NpgsqlTypes;
 using Database.Entities;
+using Route = Database.Entities.Route;
 
 namespace Database;
 

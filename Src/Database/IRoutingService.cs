@@ -4,5 +4,5 @@ namespace Database;
 
 public interface IRoutingService 
 {
-    public Task<Route> GetRouteByName(string name);
+    public Task<Entities.Route> GetRouteByName(string name);
 }

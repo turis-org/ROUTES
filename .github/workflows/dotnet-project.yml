@@ -21,7 +21,7 @@ jobs:
 
       - name: Restore dependencies
         run: |
-          cd Src
+          cd Tests/Database.Tests
           dotnet restore
 
       - name: Create results directory
@@ -29,7 +29,7 @@ jobs:
 
       - name: Run unit tests with results
         run: |
-          cd Src
+          cd Tests/Database.Tests
           dotnet test --no-restore --configuration Release --logger "trx;LogFileName=unit_tests.trx" --results-directory ${{ env.TEST_RESULTS_DIR }}
 
       - name: Publish test results

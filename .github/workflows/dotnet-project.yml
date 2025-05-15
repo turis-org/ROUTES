@@ -24,18 +24,13 @@ jobs:
           cd Src
           dotnet restore
 
-      - name: Build
-        run: |
-          cd Src
-          dotnet build --configuration Release --no-restore
-
       - name: Create results directory
         run: mkdir -p ${{ env.TEST_RESULTS_DIR }}
 
       - name: Run unit tests with results
         run: |
           cd Src
-          dotnet test --no-build --configuration Release --logger "trx;LogFileName=unit_tests.trx" --results-directory ${{ env.TEST_RESULTS_DIR }}
+          dotnet test --no-restore --configuration Release --logger "trx;LogFileName=unit_tests.trx" --results-directory ${{ env.TEST_RESULTS_DIR }}
 
       - name: Publish test results
         if: always()

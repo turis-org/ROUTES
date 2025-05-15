@@ -98,7 +98,7 @@ public class RoutingService
         return route;
     }
 
-    public async Task<Route> GetRouteByName(String name)
+    /*public async Task<Route> GetRouteByName(String name)
     {
         var route = await conn.QuerySingleOrDefaultAsync<Route>(
             @"SELECT 
@@ -124,6 +124,53 @@ public class RoutingService
         }
 
         return route;
+    }*/
+
+    public async Task<List<Route>> GetAllRoutes()
+    {
+        var routes = new List<Route>();
+
+        // 1. Получаем основные данные маршрутов
+        await using (var cmd = new NpgsqlCommand(
+            @"SELECT 
+                route_id, 
+                route_name, 
+                ST_AsBinary(geom) AS geometry,
+                created_at
+              FROM routes
+              ORDER BY created_at DESC", 
+            conn))
+        {
+            await using var reader = await cmd.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
+            {
+                var route = new Route
+                {
+                    RouteId = reader.GetInt32(0),
+                    Name = reader.GetString(1),
+                    Geometry = reader.IsDBNull(2) ? null : new WKBReader().Read(reader.GetFieldValue<byte[]>(2)) as LineString,
+                    CreatedAt = reader.GetDateTime(3),
+                    Segments = null
+                };
+                routes.Add(route);
+            }
+        }
+
+        // 2. Опционально: получаем сегменты для каждого маршрута
+        foreach (var route in routes)
+        {
+            route.Segments = route.Segments = (await conn.QueryAsync<RouteSegment>(
+                    @"SELECT 
+                        route_id AS RouteId,
+                        edge_id AS EdgeId,
+                        seq_order AS Sequence
+                    FROM route_segments
+                    WHERE route_id = @RouteId
+                    ORDER BY seq_order",
+                    new { route.RouteId })).ToList();
+        }
+
+        return routes;
     }
 
     public async Task UpdateRoute(Route route)

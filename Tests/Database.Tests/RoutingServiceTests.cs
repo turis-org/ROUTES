@@ -85,7 +85,7 @@ public class RoutingServiceTests
     {   
         // Arrange
         List<Coordinate> points = TestData.GetInvalidPoints;
-        var name = "My Road";
+        var name = "My Road1";
 
         // Act
         var response = _routingService.CreateRouteFromPoints(name, points).GetAwaiter().GetResult();
@@ -99,7 +99,7 @@ public class RoutingServiceTests
     {   
         // Arrange
         List<Coordinate> points = TestData.GetOnePoint;
-        var name = "My Road";
+        var name = "My Road2";
 
         // Act
         var response = _routingService.CreateRouteFromPoints(name, points).GetAwaiter().GetResult();
@@ -113,12 +113,43 @@ public class RoutingServiceTests
     {   
         // Arrange
         List<Coordinate> points = TestData.GetEmptyPoints;
-        var name = "My Road";
+        var name = "My Road3";
 
         // Act
         var response = _routingService.CreateRouteFromPoints(name, points).GetAwaiter().GetResult();
 
         // Assert
         Assert.Null(response);
+    }
+
+    [Fact]
+    public void GetRoute_CorrectRouteId_RouteReturned()
+    {
+        // Arrange
+        List<Coordinate> points = TestData.GetTwoPoints;
+        var name = "My Road";
+
+        // Act
+        var response = _routingService.CreateRouteFromPoints(name, points).GetAwaiter().GetResult();
+
+        Assert.NotNull(response);
+
+        var response1 = _routingService.GetRoute(response.RouteId).GetAwaiter().GetResult();
+
+        // Assert
+        Assert.NotNull(response1);
+        Assert.Equal(response1.RouteId, response.RouteId);
+        Assert.Equal(response1.Name, response.Name);
+    }
+
+    [Fact]
+    public void GetRouteAllRoutes__RoutesReturned()
+    {
+        // Act
+        var response = _routingService.GetAllRoutes().GetAwaiter().GetResult();
+
+        // Assert
+        Assert.NotNull(response);
+        Assert.NotEqual(response.Count, 0);
     }
 }

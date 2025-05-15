@@ -1,3 +1,4 @@
+using Database.Entities;
 using NetTopologySuite.Geometries;
 
 namespace Database.Tests;

@@ -6,7 +6,7 @@ on:
   pull_request:
     branches: [ "master", "develop"]
 env:
-  TEST_RESULTS_DIR: "test-results"
+  TEST_RESULTS_DIR: "./test-results"
 jobs:
   tests:
     runs-on: ubuntu-latest
@@ -19,19 +19,26 @@ jobs:
         with:
           dotnet-version: '9.0.x'
 
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
+
       - name: Create results directory
         run: mkdir -p ${{ env.TEST_RESULTS_DIR }}
 
       - name: Run unit tests with results
         run: |
           cd Tests/Database.Tests
-          dotnet test --configuration Release --no-restore --logger "trx;LogFileName=unit_tests.trx" --results-directory ${{ env.TEST_RESULTS_DIR }}
+          dotnet test --no-build --configuration Release --logger "trx;LogFileName=unit_tests.trx" --results-directory ${{ env.TEST_RESULTS_DIR }}
 
       - name: Publish test results
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: unit-test-results
-          path: ${{ env.TEST_RESULTS_DIR }}/**/*.trx
+          path: ${{ env.TEST_RESULTS_DIR }}/**/*
   build:
     needs: tests 
     runs-on: ubuntu-latest

@@ -8,6 +8,7 @@ using Npgsql;
 using NpgsqlTypes;
 using Database.Entities;
 using NetTopologySuite.IO;
+using Route = Database.Entities.Route;
 
 namespace Database;
 

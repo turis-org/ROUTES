@@ -33,7 +33,7 @@ jobs:
       - name: Run Docker Compose
         run: |
           docker compose --env-file .env up -d --build
-          sleep 10        
+          timeout 120s bash -c 'until docker exec routes_db pg_isready; do sleep 2; done'        
 
       # - name: Start PostgreSQL
       #   run: |

@@ -16,9 +16,6 @@ public class RoutingServiceTests
 
     public RoutingServiceTests()
     {
-        if (!File.Exists("/home/grigoriy/Projects/ROUTES/.env")) throw new FileNotFoundException("Create .env file first!");
-        Env.Load();
-
         var connStr = new NpgsqlConnectionStringBuilder
         {
             Host = Env.GetString("DB_HOST", "localhost"),

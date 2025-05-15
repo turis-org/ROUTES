@@ -178,13 +178,16 @@ public class RoutingService
     }
 
     // Сложные операции маршрутизации
-    public async Task<Route> CreateRouteFromPoints(String name, List<Coordinate> points)
+    public async Task<Route?> CreateRouteFromPoints(String name, List<Coordinate> points)
     {
+        if (points.Count <= 1) {
+            return null;
+        }
+
         // Находим ближайшие вершины
         var vertices = new List<long>();
         foreach (var point in points)
         {   
-            Console.WriteLine(point.Y + " " + point.X);
             var vertexId = await conn.ExecuteScalarAsync<long>(
                 @"SELECT id
                 FROM routing_roads_vertices_pgr
@@ -195,21 +198,23 @@ public class RoutingService
                 )
                 ORDER BY the_geom <-> ST_SetSRID(ST_Point(@Lon, @Lat), 4326)
                 LIMIT 1",
-                new { Lat = point.Y, Lon = point.X });
+                new { Lat = point.X, Lon = point.Y });
             
+            if (vertices.Contains(vertexId)) {
+                return null;
+            }
             vertices.Add(vertexId);
         }
 
-        Console.WriteLine(vertices.Count);
+        if (vertices.Count <= 1) {
+            return null;
+        }
 
         // Вычисляем маршрут
         var parameters = new {
             Vertices = vertices,
             PathsCount = vertices.Count - 1
         };
-
-        Console.WriteLine(vertices.ToArray()[0]);
-        Console.WriteLine(vertices.ToArray()[1]);
 
         var result = await conn.QueryAsync<PathSegment>(
             @"WITH dijkstra AS (
@@ -229,18 +234,19 @@ public class RoutingService
             WHERE edge > 0",
             new { Vertices = vertices.ToArray() });
 
-        Console.WriteLine(result.First().EdgeId);
-
         // Собираем геометрию
         var edges = result.Select(r => r.EdgeId).Distinct().ToArray();
-        
+
         var byteGeometry = await conn.QuerySingleAsync<byte[]>(
-            @"SELECT ST_AsBinary(ST_Transform(ST_LineMerge(ST_Collect(geom)), 4326)) AS geom
+            @"SELECT ST_AsBinary(ST_Transform(ST_LineMerge(ST_Union(geom)), 4326)) AS geom
               FROM routing_roads
               WHERE id = ANY(@Edges)",
             new { Edges = edges });
 
-        var geometry = new WKBReader().Read(byteGeometry) as LineString;
+        if (new WKBReader().Read(byteGeometry) is not LineString geometry)
+        {
+            throw new Exception("Geometry is null!");
+        }
 
         // Создаем маршрут
         var route = new Route

@@ -7,7 +7,7 @@ using NetTopologySuite.Geometries;
 using Npgsql;
 using NpgsqlTypes;
 using Database.Entities;
-using Route = Database.Entities.Route;
+using NetTopologySuite.IO;
 
 namespace Database;
 
@@ -45,7 +45,7 @@ public class RoutingService : IRoutingService
         {
             var routeId = await conn.ExecuteScalarAsync<int>(
                 @"INSERT INTO routes (route_name, geom)
-                  VALUES (@Name, ST_GeomFromEWKB(@Geometry))
+                  VALUES (@Name, ST_SetSRID(ST_GeomFromEWKB(@Geometry), 4326))
                   RETURNING route_id",
                 new { route.Name, Geometry = route.Geometry.AsBinary() },
                 transaction);
@@ -183,22 +183,33 @@ public class RoutingService : IRoutingService
         // Находим ближайшие вершины
         var vertices = new List<long>();
         foreach (var point in points)
-        {
+        {   
+            Console.WriteLine(point.Y + " " + point.X);
             var vertexId = await conn.ExecuteScalarAsync<long>(
                 @"SELECT id
-                  FROM routing_roads_vertices_pgr
-                  ORDER BY the_geom <-> ST_SetSRID(ST_Point(@Lon, @Lat), 4326)
-                  LIMIT 1",
+                FROM routing_roads_vertices_pgr
+                WHERE ST_DWithin(
+                    the_geom,
+                    ST_SetSRID(ST_Point(@Lon, @Lat), 4326),
+                    100
+                )
+                ORDER BY the_geom <-> ST_SetSRID(ST_Point(@Lon, @Lat), 4326)
+                LIMIT 1",
                 new { Lat = point.Y, Lon = point.X });
             
             vertices.Add(vertexId);
         }
+
+        Console.WriteLine(vertices.Count);
 
         // Вычисляем маршрут
         var parameters = new {
             Vertices = vertices,
             PathsCount = vertices.Count - 1
         };
+
+        Console.WriteLine(vertices.ToArray()[0]);
+        Console.WriteLine(vertices.ToArray()[1]);
 
         var result = await conn.QueryAsync<PathSegment>(
             @"WITH dijkstra AS (
@@ -216,16 +227,20 @@ public class RoutingService : IRoutingService
                 node AS NodeId
             FROM dijkstra
             WHERE edge > 0",
-            parameters);
+            new { Vertices = vertices.ToArray() });
+
+        Console.WriteLine(result.First().EdgeId);
 
         // Собираем геометрию
-        var edges = result.Select(r => r.EdgeId).Distinct().ToList();
+        var edges = result.Select(r => r.EdgeId).Distinct().ToArray();
         
-        var geometry = await conn.QuerySingleAsync<LineString>(
-            @"SELECT ST_LineMerge(ST_Collect(geom)) AS geom
+        var byteGeometry = await conn.QuerySingleAsync<byte[]>(
+            @"SELECT ST_AsBinary(ST_Transform(ST_LineMerge(ST_Collect(geom)), 4326)) AS geom
               FROM routing_roads
               WHERE id = ANY(@Edges)",
             new { Edges = edges });
+
+        var geometry = new WKBReader().Read(byteGeometry) as LineString;
 
         // Создаем маршрут
         var route = new Route
@@ -245,5 +260,47 @@ public class RoutingService : IRoutingService
 
         route.RouteId = await CreateRoute(route);
         return route;
+    }
+    
+    public async Task<List<Route>> FindNearestRoutesAsync(double longitude, double latitude, 
+        int limit = 1, double maxDistanceMeters = 1000)
+    {
+        // Получаем ближайшие маршруты в пределах maxDistanceMeters
+        var routes = (await conn.QueryAsync<Route>(
+                @"SELECT 
+            route_id AS RouteId,
+            route_name AS Name,
+            geom AS Geometry,
+            created_at AS CreatedAt
+          FROM routes
+          WHERE ST_Distance(
+            geom::geography,
+            ST_SetSRID(ST_MakePoint(@Lon, @Lat), 4326)::geography) < @MaxDistance
+          ORDER BY ST_Distance(geom::geography, ST_SetSRID(ST_MakePoint(@Lon, @Lat), 4326)::geography) ASC
+          LIMIT @Limit",
+                new { 
+                    Lon = longitude, 
+                    Lat = latitude, 
+                    Limit = limit,
+                    MaxDistance = maxDistanceMeters
+                }))
+            .ToList();
+            
+        // Для каждого маршрута загружаем сегменты
+        foreach (var route in routes)
+        {
+            route.Segments = (await conn.QueryAsync<RouteSegment>(
+                    @"SELECT 
+                route_id AS RouteId,
+                edge_id AS EdgeId,
+                seq_order AS Sequence
+              FROM route_segments
+              WHERE route_id = @RouteId
+              ORDER BY seq_order",
+                    new { RouteId = route.RouteId }))
+                .ToList();
+        }
+
+        return routes;
     }
 }

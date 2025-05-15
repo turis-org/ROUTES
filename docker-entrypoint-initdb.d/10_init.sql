@@ -24,7 +24,7 @@ UPDATE routing_roads SET
          END;
 
 -- Создание топологии (заполняет таблицу routing_roads и создаёт ещё одну таблицу routing_roads_vertices_pgr с вершинами графа (source и target как раз ссылки на них))
-SELECT pgr_createTopology('routing_roads', 0.0001, 'geom', 'id');
+SELECT pgr_createTopology('routing_roads', 0.00001, 'geom', 'id');
 
 -- Создание индексов
 CREATE INDEX IF NOT EXISTS routing_roads_geom_idx ON routing_roads USING GIST(geom);
@@ -50,3 +50,7 @@ CREATE TABLE route_segments (
     seq_order INT NOT NULL, -- Порядок следования сегментов
     PRIMARY KEY (route_id, edge_id, seq_order)
 );
+
+ALTER TABLE routing_roads_vertices_pgr 
+ALTER COLUMN the_geom TYPE Geometry(Point, 4326)
+USING ST_Transform(the_geom, 4326);

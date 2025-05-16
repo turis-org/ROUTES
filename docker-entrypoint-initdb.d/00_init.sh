@@ -1,5 +1,5 @@
 #!/bin/bash
-
+echo "listen_addresses = '*'" >> $PGDATA/postgresql.conf
 exec_psql() {
 	PGPASSWORD=${POSTGRES_PASSWORD} psql -v ON_ERROR_STOP=1 -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" <<-EOSQL
         $1

@@ -32,7 +32,7 @@ jobs:
        
       - name: Run Docker Compose
         run: |
-          docker compose --env-file .env up -d --build
+          docker compose --env-file .env up postgres -d --build
           timeout 120s bash -c 'until docker exec routes_db pg_isready; do sleep 2; done'        
 
       # - name: Start PostgreSQL
@@ -43,7 +43,11 @@ jobs:
       - name: Run unit tests with results
         run: |
           cd Tests/Database.Tests
-          dotnet test --no-restore --configuration Release --logger "trx;LogFileName=unit_tests.trx" --results-directory ${{ env.TEST_RESULTS_DIR }}
+          dotnet test \
+            --no-restore \
+            --configuration Release \
+            --logger "trx;LogFileName=unit_tests.trx" \
+            --results-directory ${{ env.TEST_RESULTS_DIR }}
 
       - name: Publish test results
         if: always()

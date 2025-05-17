@@ -1,56 +1,62 @@
--- Создание таблицы для маршрутизации (каждая запись - ребро - участок дороги между 2 узлами)
-CREATE TABLE IF NOT EXISTS routing_roads AS
-SELECT osm_id, name, highway, way AS geom
-FROM planet_osm_line
-WHERE highway IN ('motorway','trunk','primary','secondary',
-                'tertiary','unclassified','residential',
-                'motorway_link','trunk_link','primary_link',
-                'secondary_link','tertiary_link');
-
--- Добавление необходимых столбцов
-ALTER TABLE routing_roads ADD COLUMN IF NOT EXISTS id SERIAL PRIMARY KEY;
-ALTER TABLE routing_roads ADD COLUMN IF NOT EXISTS source INTEGER;
-ALTER TABLE routing_roads ADD COLUMN IF NOT EXISTS target INTEGER;
-ALTER TABLE routing_roads ADD COLUMN IF NOT EXISTS cost DOUBLE PRECISION;
-
--- Обновление данных 4326 - id системы координат, использующая широту и долготу
-UPDATE routing_roads SET
-  cost = ST_Length(ST_Transform(geom, 4326)::geography) / 
-         CASE 
-           WHEN highway IN ('motorway','trunk') THEN 130.0 -- 130 км/ч
-           WHEN highway IN ('primary') THEN 90.0
-           WHEN highway IN ('secondary') THEN 70.0
-           ELSE 50.0 -- городские дороги
-         END;
-
--- Создание топологии (заполняет таблицу routing_roads и создаёт ещё одну таблицу routing_roads_vertices_pgr с вершинами графа (source и target как раз ссылки на них))
--- SELECT pgr_createTopology('routing_roads', 0.00001, 'geom', 'id');
-
-CREATE TABLE vertices_table AS
-SELECT id, geom FROM pgr_extractVertices(
-  'SELECT id, geom FROM routing_roads ORDER BY id'
+-- Создаем основную таблицу для маршрутизации
+CREATE TABLE IF NOT EXISTS routing_roads (
+    id SERIAL PRIMARY KEY,
+    osm_id BIGINT,
+    name TEXT,
+    highway TEXT,
+    geom GEOMETRY(LineString, 4326),
+    source INTEGER,
+    target INTEGER,
+    cost DOUBLE PRECISION,
+    reverse_cost DOUBLE PRECISION
 );
 
--- Обновляем поле source
-UPDATE routing_roads AS r
-SET source = v.id
-FROM vertices_table AS v
-WHERE ST_Equals(ST_StartPoint(r.geom), v.geom);
+-- Заполняем таблицу данными дорог из OSM
+INSERT INTO routing_roads (osm_id, name, highway, geom)
+SELECT 
+    osm_id, 
+    name, 
+    highway, 
+    ST_Transform(way, 4326) AS geom
+FROM planet_osm_line
+WHERE highway IN (
+    'motorway', 'trunk', 'primary', 'secondary',
+    'tertiary', 'unclassified', 'residential',
+    'motorway_link', 'trunk_link', 'primary_link',
+    'secondary_link', 'tertiary_link'
+);
 
--- Обновляем поле target
-UPDATE routing_roads AS r
-SET target = v.id
-FROM vertices_table AS v
-WHERE ST_Equals(ST_EndPoint(r.geom), v.geom);
+-- Создание топологии (заполняет таблицу routing_roads и создаёт ещё одну таблицу routing_roads_vertices_pgr с вершинами графа (source и target как раз ссылки на них))
+SELECT pgr_createTopology('routing_roads', 0.00001, 'geom', 'id');
 
--- Создание индексов
+-- Рассчитываем стоимость проезда
+UPDATE routing_roads SET
+    cost = ST_Length(geom::geography) / 
+        CASE 
+            WHEN highway IN ('motorway','trunk') THEN 130.0 -- 130 км/ч
+            WHEN highway IN ('primary') THEN 90.0
+            WHEN highway IN ('secondary') THEN 70.0
+            ELSE 50.0 -- городские дороги
+        END,
+    reverse_cost = ST_Length(geom::geography) / 
+        CASE 
+            WHEN highway IN ('motorway','trunk','motorway_link','trunk_link') THEN 130.0
+            WHEN highway IN ('primary','primary_link') THEN 90.0
+            WHEN highway IN ('secondary','secondary_link') THEN 70.0
+            ELSE 50.0 -- городские дороги
+        END;
+
+-- Настраиваем односторонние дороги
+UPDATE routing_roads 
+SET reverse_cost = -1 
+WHERE highway IN ('motorway_link', 'trunk_link');
+
+-- Создаем индексы для ускорения работы
 CREATE INDEX IF NOT EXISTS routing_roads_geom_idx ON routing_roads USING GIST(geom);
 CREATE INDEX IF NOT EXISTS routing_roads_source_idx ON routing_roads(source);
 CREATE INDEX IF NOT EXISTS routing_roads_target_idx ON routing_roads(target);
 
 -- Создание таблицы маршрутов
-
-
 CREATE TABLE IF NOT EXISTS routes (
     route_id SERIAL PRIMARY KEY,
     route_name VARCHAR(255) NOT NULL,

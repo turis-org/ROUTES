@@ -41,6 +41,8 @@ jobs:
           timeout 120s bash -c 'until docker exec routes_db pg_isready; do sleep 2; done'   
           docker exec routes_db psql -U admin -d turis -c "CREATE EXTENSION IF NOT EXISTS pgrouting;"
           docker exec routes_db psql -U admin -d turis -c "\dt"
+          docker exec -i routes_db psql -U admin -d turis -f /docker-entrypoint-initdb.d/10_init.sql
+          docker exec routes_db psql -U admin -d turis -c "\dt"
 
       # - name: Start PostgreSQL
       #   run: |

@@ -25,8 +25,9 @@ UPDATE routing_roads SET
 
 -- Создание топологии (заполняет таблицу routing_roads и создаёт ещё одну таблицу routing_roads_vertices_pgr с вершинами графа (source и target как раз ссылки на них))
 -- SELECT pgr_createTopology('routing_roads', 0.00001, 'geom', 'id');
+
 CREATE TABLE vertices_table AS
-SELECT * FROM pgr_extractVertices(
+SELECT id, geom FROM pgr_extractVertices(
   'SELECT id, geom FROM routing_roads ORDER BY id'
 );
 
@@ -34,13 +35,13 @@ SELECT * FROM pgr_extractVertices(
 UPDATE routing_roads AS r
 SET source = v.id
 FROM vertices_table AS v
-WHERE ST_Equals(ST_StartPoint(r.geom), v.the_geom);
+WHERE ST_Equals(ST_StartPoint(r.geom), v.geom);
 
 -- Обновляем поле target
 UPDATE routing_roads AS r
 SET target = v.id
 FROM vertices_table AS v
-WHERE ST_Equals(ST_EndPoint(r.geom), v.the_geom);
+WHERE ST_Equals(ST_EndPoint(r.geom), v.geom);
 
 -- Создание индексов
 CREATE INDEX IF NOT EXISTS routing_roads_geom_idx ON routing_roads USING GIST(geom);

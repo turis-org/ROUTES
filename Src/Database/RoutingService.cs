@@ -247,15 +247,15 @@ public class RoutingService
         {   
             var vertexId = await conn.ExecuteScalarAsync<long>(
                 @"SELECT id
-                FROM routing_roads_vertices_pgr
+                FROM vertices_table
                 WHERE ST_DWithin(
-                    the_geom,
+                    geom,
                     ST_SetSRID(ST_Point(@Lon, @Lat), 4326),
-                    100
+                    0.01
                 )
-                ORDER BY the_geom <-> ST_SetSRID(ST_Point(@Lon, @Lat), 4326)
+                ORDER BY geom <-> ST_SetSRID(ST_Point(@Lon, @Lat), 4326)
                 LIMIT 1",
-                new { Lat = point.X, Lon = point.Y });
+                new { Lat = point.Y, Lon = point.X });
             
             if (vertices.Contains(vertexId)) {
                 return null;

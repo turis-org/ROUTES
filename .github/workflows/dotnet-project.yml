@@ -33,7 +33,9 @@ jobs:
       - name: Run Docker Compose
         run: |
           docker compose --env-file .env up postgres -d --build
-          timeout 120s bash -c 'until docker exec routes_db pg_isready; do sleep 2; done'        
+          docker compose ps --services --filter "status=healthy" | grep -q postgres
+          docker port postgres
+          # timeout 120s bash -c 'until docker exec routes_db pg_isready; do sleep 2; done'        
 
       # - name: Start PostgreSQL
       #   run: |

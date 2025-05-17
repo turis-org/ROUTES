@@ -26,8 +26,18 @@ public class RoutingService
     public RoutingService(string connectionString)
     {
         NpgsqlConnection.GlobalTypeMapper.UseNetTopologySuite();
-        conn = new NpgsqlConnection(connectionString);
-        conn.Open();
+        // conn = new NpgsqlConnection(connectionString);
+        // conn.Open();
+        try 
+        {
+            conn = new NpgsqlConnection(connectionString);
+            conn.Open();
+            Console.WriteLine("Подключение успешно!");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Ошибка: {ex.Message}");
+        }
     }
 
     ~RoutingService()

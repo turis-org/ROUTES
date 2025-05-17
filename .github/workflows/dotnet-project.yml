@@ -38,7 +38,8 @@ jobs:
           docker compose port postgres 5432
           docker logs routes_db
           
-          timeout 120s bash -c 'until docker exec routes_db pg_isready; do sleep 2; done'        
+          timeout 120s bash -c 'until docker exec routes_db pg_isready; do sleep 2; done'   
+          docker exec routes_db psql -U admin -d turis -c "CREATE EXTENSION IF NOT EXISTS pgrouting;"
 
       # - name: Start PostgreSQL
       #   run: |

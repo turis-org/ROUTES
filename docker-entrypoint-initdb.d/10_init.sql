@@ -26,8 +26,35 @@ WHERE highway IN (
     'secondary_link', 'tertiary_link'
 );
 
--- Создание топологии (заполняет таблицу routing_roads и создаёт ещё одну таблицу routing_roads_vertices_pgr с вершинами графа (source и target как раз ссылки на них))
-SELECT pgr_createTopology('routing_roads', 0.00001, 'geom', 'id');
+-- Создаем временную таблицу для обработки сети
+CREATE TEMP TABLE tmp_network AS
+SELECT * FROM pgr_nodeNetwork(
+    'routing_roads',
+    0.00001,  -- допуск (~1 метр)
+    'id',     -- поле с ID
+    'geom',   -- поле с геометрией
+    'true'    -- создавать таблицу вершин
+);
+
+-- Очищаем и перезаполняем исходную таблицу
+TRUNCATE routing_roads;
+
+INSERT INTO routing_roads (id, osm_id, name, highway, geom, source, target)
+SELECT 
+    id, 
+    osm_id, 
+    name, 
+    highway, 
+    geom, 
+    source, 
+    target 
+FROM tmp_network;
+
+-- Удаляем временную таблицу
+DROP TABLE IF EXISTS tmp_network;
+
+-- Создаем таблицу вершин (routing_roads_vertices_pgr)
+SELECT pgr_createVerticesTable('routing_roads');
 
 -- Рассчитываем стоимость проезда
 UPDATE routing_roads SET

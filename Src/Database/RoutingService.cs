@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -99,7 +99,7 @@ public class RoutingService : IRoutingService
         return route;
     }
 
-    public async Task<Route> GetRouteByName(string name)
+    /*public async Task<Route> GetRouteByName(String name)
     {
         var route = await conn.QuerySingleOrDefaultAsync<Route>(
             @"SELECT 
@@ -125,6 +125,53 @@ public class RoutingService : IRoutingService
         }
 
         return route;
+    }*/
+
+    public async Task<List<Route>> GetAllRoutes()
+    {
+        var routes = new List<Route>();
+
+        // 1. Получаем основные данные маршрутов
+        await using (var cmd = new NpgsqlCommand(
+            @"SELECT 
+                route_id, 
+                route_name, 
+                ST_AsBinary(geom) AS geometry,
+                created_at
+              FROM routes
+              ORDER BY created_at DESC", 
+            conn))
+        {
+            await using var reader = await cmd.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
+            {
+                var route = new Route
+                {
+                    RouteId = reader.GetInt32(0),
+                    Name = reader.GetString(1),
+                    Geometry = reader.IsDBNull(2) ? null : new WKBReader().Read(reader.GetFieldValue<byte[]>(2)) as LineString,
+                    CreatedAt = reader.GetDateTime(3),
+                    Segments = null
+                };
+                routes.Add(route);
+            }
+        }
+
+        // 2. Опционально: получаем сегменты для каждого маршрута
+        foreach (var route in routes)
+        {
+            route.Segments = route.Segments = (await conn.QueryAsync<RouteSegment>(
+                    @"SELECT 
+                        route_id AS RouteId,
+                        edge_id AS EdgeId,
+                        seq_order AS Sequence
+                    FROM route_segments
+                    WHERE route_id = @RouteId
+                    ORDER BY seq_order",
+                    new { route.RouteId })).ToList();
+        }
+
+        return routes;
     }
 
     public async Task UpdateRoute(Route route)
@@ -179,13 +226,16 @@ public class RoutingService : IRoutingService
     }
 
     // Сложные операции маршрутизации
-    public async Task<Route> CreateRouteFromPoints(String name, List<Coordinate> points)
+    public async Task<Route?> CreateRouteFromPoints(String name, List<Coordinate> points)
     {
+        if (points.Count <= 1) {
+            return null;
+        }
+
         // Находим ближайшие вершины
         var vertices = new List<long>();
         foreach (var point in points)
         {   
-            Console.WriteLine(point.Y + " " + point.X);
             var vertexId = await conn.ExecuteScalarAsync<long>(
                 @"SELECT id
                 FROM routing_roads_vertices_pgr
@@ -196,21 +246,23 @@ public class RoutingService : IRoutingService
                 )
                 ORDER BY the_geom <-> ST_SetSRID(ST_Point(@Lon, @Lat), 4326)
                 LIMIT 1",
-                new { Lat = point.Y, Lon = point.X });
+                new { Lat = point.X, Lon = point.Y });
             
+            if (vertices.Contains(vertexId)) {
+                return null;
+            }
             vertices.Add(vertexId);
         }
 
-        Console.WriteLine(vertices.Count);
+        if (vertices.Count <= 1) {
+            return null;
+        }
 
         // Вычисляем маршрут
         var parameters = new {
             Vertices = vertices,
             PathsCount = vertices.Count - 1
         };
-
-        Console.WriteLine(vertices.ToArray()[0]);
-        Console.WriteLine(vertices.ToArray()[1]);
 
         var result = await conn.QueryAsync<PathSegment>(
             @"WITH dijkstra AS (
@@ -230,18 +282,19 @@ public class RoutingService : IRoutingService
             WHERE edge > 0",
             new { Vertices = vertices.ToArray() });
 
-        Console.WriteLine(result.First().EdgeId);
-
         // Собираем геометрию
         var edges = result.Select(r => r.EdgeId).Distinct().ToArray();
-        
+
         var byteGeometry = await conn.QuerySingleAsync<byte[]>(
-            @"SELECT ST_AsBinary(ST_Transform(ST_LineMerge(ST_Collect(geom)), 4326)) AS geom
+            @"SELECT ST_AsBinary(ST_Transform(ST_LineMerge(ST_Union(geom)), 4326)) AS geom
               FROM routing_roads
               WHERE id = ANY(@Edges)",
             new { Edges = edges });
 
-        var geometry = new WKBReader().Read(byteGeometry) as LineString;
+        if (new WKBReader().Read(byteGeometry) is not LineString geometry)
+        {
+            throw new Exception("Geometry is null!");
+        }
 
         // Создаем маршрут
         var route = new Route

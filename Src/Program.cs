@@ -23,7 +23,7 @@ public class Program
         }.ToString();
 
         // Регистрация сервиса
-        builder.Services.AddScoped<RoutingService>(_ => new RoutingService(connectionString));
+        builder.Services.AddScoped<IRoutingService>(_ => new RoutingService(connectionString));
 
         ConfigureServices(builder.Services);
 

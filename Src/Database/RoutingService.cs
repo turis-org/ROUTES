@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -8,10 +8,11 @@ using Npgsql;
 using NpgsqlTypes;
 using Database.Entities;
 using NetTopologySuite.IO;
+using Route = Database.Entities.Route;
 
 namespace Database;
 
-public class RoutingService
+public class RoutingService : IRoutingService
 {
     private Npgsql.NpgsqlConnection conn;
 

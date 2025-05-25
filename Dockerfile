@@ -2,7 +2,7 @@ FROM pgrouting/pgrouting:17-3.5-main
 
 LABEL maintainer="Turis Project - <add link>"
 
-ENV USED_MAPS https://osm.sbin.ru/osm_dump/RU-NVS.osm.pbf
+ENV USED_MAPS https://download.geofabrik.de/russia/central-fed-district-latest.osm.pbf
 ENV CONNECTIONS 4
 ENV THREADS 4
 

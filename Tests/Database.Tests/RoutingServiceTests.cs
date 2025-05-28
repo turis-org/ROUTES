@@ -132,7 +132,7 @@ public class RoutingServiceTests
     public void CreateRouteFromPoints_0CorrectPoint_NullReturned()
     {   
         // Arrange
-        List<Coordinate> points = TestData.GetEmptyPoints;
+        List<Coordinate> points = new List<Coordinate>();
         var name = "My Road3";
 
         // Act

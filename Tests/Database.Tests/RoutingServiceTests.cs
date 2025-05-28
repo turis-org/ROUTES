@@ -30,89 +30,89 @@ public class RoutingServiceTests
         _routingService = new(connStr);
     }
 
-    // [Fact]
-    // public void CreateRouteFromPoints_2CorrectPoints_CorrectRouteReturned()
-    // {   
-    //     // Arrange
-    //     List<Coordinate> points = TestData.GetTwoPoints;
-    //     var name = "My Road";
+    [Fact]
+    public void CreateRouteFromPoints_2CorrectPoints_CorrectRouteReturned()
+    {   
+        // Arrange
+        List<Coordinate> points = TestData.GetTwoPoints;
+        var name = "My Road";
 
-    //     // Act
-    //     var response = _routingService.CreateRouteFromPoints(name, points).GetAwaiter().GetResult();
+        // Act
+        var response = _routingService.CreateRouteFromPoints(name, points).GetAwaiter().GetResult();
 
-    //     // Assert
-    //     Assert.NotNull(response);
-    //     Assert.Equal(name, response.Name);
-    //     Assert.NotNull(response.Geometry.Coordinates);
+        // Assert
+        Assert.NotNull(response);
+        Assert.Equal(name, response.Name);
+        Assert.NotNull(response.Geometry.Coordinates);
 
-    //     // В результате в X находится долгота, а в Y широта (на вход подаётся наоборот !!!)
-    //     Assert.InRange(response.Geometry.Coordinates.First().X, points.First().Y - 0.01, points.First().Y + 0.01);
-    //     Assert.InRange(response.Geometry.Coordinates.First().Y, points.First().X - 0.01, points.First().X + 0.01);
-    //     Assert.InRange(response.Geometry.Coordinates.Last().X, points.Last().Y - 0.01, points.Last().Y + 0.01);
-    //     Assert.InRange(response.Geometry.Coordinates.Last().Y, points.Last().X - 0.01, points.Last().X + 0.01);
-    //     //Assert.InRange(points.First().Distance(response.Geometry.Coordinates.First()), 0, 5);
-    //     //Assert.InRange(points.Last().Distance(response.Geometry.Coordinates.Last()), 0, 5);
-    // }
+        // В результате в X находится долгота, а в Y широта (на вход подаётся наоборот !!!)
+        Assert.InRange(response.Geometry.Coordinates.First().X, points.First().Y - 0.01, points.First().Y + 0.01);
+        Assert.InRange(response.Geometry.Coordinates.First().Y, points.First().X - 0.01, points.First().X + 0.01);
+        Assert.InRange(response.Geometry.Coordinates.Last().X, points.Last().Y - 0.01, points.Last().Y + 0.01);
+        Assert.InRange(response.Geometry.Coordinates.Last().Y, points.Last().X - 0.01, points.Last().X + 0.01);
+        //Assert.InRange(points.First().Distance(response.Geometry.Coordinates.First()), 0, 5);
+        //Assert.InRange(points.Last().Distance(response.Geometry.Coordinates.Last()), 0, 5);
+    }
 
-    // [Fact]
-    // public void CreateRouteFromPoints_3CorrectPoints_CorrectRouteReturned()
-    // {   
-    //     // Arrange
-    //     List<Coordinate> points = TestData.GetThreePoints;
-    //     var name = "My Road";
+    [Fact]
+    public void CreateRouteFromPoints_3CorrectPoints_CorrectRouteReturned()
+    {   
+        // Arrange
+        List<Coordinate> points = TestData.GetThreePoints;
+        var name = "My Road";
 
-    //     // Act
-    //     var response = _routingService.CreateRouteFromPoints(name, points).GetAwaiter().GetResult();
+        // Act
+        var response = _routingService.CreateRouteFromPoints(name, points).GetAwaiter().GetResult();
 
-    //     // Assert
-    //     Assert.NotNull(response);
-    //     Assert.Equal(name, response.Name);
-    //     Assert.NotNull(response.Geometry.Coordinates);
+        // Assert
+        Assert.NotNull(response);
+        Assert.Equal(name, response.Name);
+        Assert.NotNull(response.Geometry.Coordinates);
 
-    //     Assert.InRange(response.Geometry.Coordinates.First().X, points.First().Y - 0.01, points.First().Y + 0.01);
-    //     Assert.InRange(response.Geometry.Coordinates.First().Y, points.First().X - 0.01, points.First().X + 0.01);
-    //     Assert.InRange(response.Geometry.Coordinates.Last().X, points.Last().Y - 0.01, points.Last().Y + 0.01);
-    //     Assert.InRange(response.Geometry.Coordinates.Last().Y, points.Last().X - 0.01, points.Last().X + 0.01);
+        Assert.InRange(response.Geometry.Coordinates.First().X, points.First().Y - 0.01, points.First().Y + 0.01);
+        Assert.InRange(response.Geometry.Coordinates.First().Y, points.First().X - 0.01, points.First().X + 0.01);
+        Assert.InRange(response.Geometry.Coordinates.Last().X, points.Last().Y - 0.01, points.Last().Y + 0.01);
+        Assert.InRange(response.Geometry.Coordinates.Last().Y, points.Last().X - 0.01, points.Last().X + 0.01);
 
-    //     _routingService.DeleteRoute(response.RouteId).GetAwaiter();
-    // }
+        _routingService.DeleteRoute(response.RouteId).GetAwaiter();
+    }
 
-    // [Fact]
-    // public void CreateRouteFromPoints_MultipleCorrectPoints_CorrectRouteReturned()
-    // {   
-    //     // Arrange
-    //     List<Coordinate> points = TestData.GetMultiplePoints;
-    //     var name = "My Road";
+    [Fact]
+    public void CreateRouteFromPoints_MultipleCorrectPoints_CorrectRouteReturned()
+    {   
+        // Arrange
+        List<Coordinate> points = TestData.GetMultiplePoints;
+        var name = "My Road";
 
-    //     // Act
-    //     var response = _routingService.CreateRouteFromPoints(name, points).GetAwaiter().GetResult();
+        // Act
+        var response = _routingService.CreateRouteFromPoints(name, points).GetAwaiter().GetResult();
 
-    //     // Assert
-    //     Assert.NotNull(response);
-    //     Assert.Equal(name, response.Name);
-    //     Assert.NotNull(response.Geometry.Coordinates);
+        // Assert
+        Assert.NotNull(response);
+        Assert.Equal(name, response.Name);
+        Assert.NotNull(response.Geometry.Coordinates);
 
-    //     Assert.InRange(response.Geometry.Coordinates.First().X, points.First().Y - 0.01, points.First().Y + 0.01);
-    //     Assert.InRange(response.Geometry.Coordinates.First().Y, points.First().X - 0.01, points.First().X + 0.01);
-    //     Assert.InRange(response.Geometry.Coordinates.Last().X, points.Last().Y - 0.01, points.Last().Y + 0.01);
-    //     Assert.InRange(response.Geometry.Coordinates.Last().Y, points.Last().X - 0.01, points.Last().X + 0.01);
+        Assert.InRange(response.Geometry.Coordinates.First().X, points.First().Y - 0.01, points.First().Y + 0.01);
+        Assert.InRange(response.Geometry.Coordinates.First().Y, points.First().X - 0.01, points.First().X + 0.01);
+        Assert.InRange(response.Geometry.Coordinates.Last().X, points.Last().Y - 0.01, points.Last().Y + 0.01);
+        Assert.InRange(response.Geometry.Coordinates.Last().Y, points.Last().X - 0.01, points.Last().X + 0.01);
 
-    //     _routingService.DeleteRoute(response.RouteId).GetAwaiter();
-    // }
+        _routingService.DeleteRoute(response.RouteId).GetAwaiter();
+    }
 
-    // [Fact]
-    // public void CreateRouteFromPoints_2IncorrectPoints_NullReturned()
-    // {   
-    //     // Arrange
-    //     List<Coordinate> points = TestData.GetInvalidPoints;
-    //     var name = "My Road1";
+    [Fact]
+    public void CreateRouteFromPoints_2IncorrectPoints_NullReturned()
+    {   
+        // Arrange
+        List<Coordinate> points = TestData.GetInvalidPoints;
+        var name = "My Road1";
 
-    //     // Act
-    //     var response = _routingService.CreateRouteFromPoints(name, points).GetAwaiter().GetResult();
+        // Act
+        var response = _routingService.CreateRouteFromPoints(name, points).GetAwaiter().GetResult();
 
-    //     // Assert
-    //     Assert.Null(response);
-    // }
+        // Assert
+        Assert.Null(response);
+    }
 
     [Fact]
     public void CreateRouteFromPoints_1CorrectPoint_NullReturned()
@@ -142,34 +142,34 @@ public class RoutingServiceTests
         Assert.Null(response);
     }
 
-    // [Fact]
-    // public void GetRoute_CorrectRouteId_RouteReturned()
-    // {
-    //     // Arrange
-    //     List<Coordinate> points = TestData.GetTwoPoints;
-    //     var name = "My Road";
+    [Fact]
+    public void GetRoute_CorrectRouteId_RouteReturned()
+    {
+        // Arrange
+        List<Coordinate> points = TestData.GetTwoPoints;
+        var name = "My Road";
 
-    //     // Act
-    //     var response = _routingService.CreateRouteFromPoints(name, points).GetAwaiter().GetResult();
+        // Act
+        var response = _routingService.CreateRouteFromPoints(name, points).GetAwaiter().GetResult();
 
-    //     Assert.NotNull(response);
+        Assert.NotNull(response);
 
-    //     var response1 = _routingService.GetRoute(response.RouteId).GetAwaiter().GetResult();
+        var response1 = _routingService.GetRoute(response.RouteId).GetAwaiter().GetResult();
 
-    //     // Assert
-    //     Assert.NotNull(response1);
-    //     Assert.Equal(response1.RouteId, response.RouteId);
-    //     Assert.Equal(response1.Name, response.Name);
-    // }
+        // Assert
+        Assert.NotNull(response1);
+        Assert.Equal(response1.RouteId, response.RouteId);
+        Assert.Equal(response1.Name, response.Name);
+    }
 
-    // [Fact]
-    // public void GetRouteAllRoutes__RoutesReturned()
-    // {
-    //     // Act
-    //     var response = _routingService.GetAllRoutes().GetAwaiter().GetResult();
+    [Fact]
+    public void GetRouteAllRoutes__RoutesReturned()
+    {
+        // Act
+        var response = _routingService.GetAllRoutes().GetAwaiter().GetResult();
 
-    //     // Assert
-    //     Assert.NotNull(response);
-    //     Assert.NotEqual(response.Count, 0);
-    // }
+        // Assert
+        Assert.NotNull(response);
+        Assert.NotEqual(response.Count, 0);
+    }
 }

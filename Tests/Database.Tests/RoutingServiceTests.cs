@@ -31,6 +31,13 @@ public class RoutingServiceTests
     }
 
     [Fact]
+    public void Service_CanBeInitialized()
+    {
+        var service = new RoutingService("Host=localhost;Database=turis;Username=admin;Password=ab4dsF5hpli1");
+        Assert.NotNull(service);
+    }
+
+    [Fact]
     public void CreateRouteFromPoints_2CorrectPoints_CorrectRouteReturned()
     {   
         // Arrange

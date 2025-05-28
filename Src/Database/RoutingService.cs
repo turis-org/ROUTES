@@ -51,7 +51,7 @@ public class RoutingService : IRoutingService
                 new { route.Name, Geometry = route.Geometry.AsBinary() },
                 transaction);
 
-            await conn.ExecuteAsync(
+            /*await conn.ExecuteAsync(
                 @"INSERT INTO route_segments (route_id, edge_id, seq_order)
                   VALUES (@RouteId, @EdgeId, @Sequence)",
                 route.Segments.Select(s => new {
@@ -59,7 +59,7 @@ public class RoutingService : IRoutingService
                     s.EdgeId,
                     s.Sequence
                 }),
-                transaction);
+                transaction);*/
 
             transaction.Commit();
             return routeId;
@@ -83,7 +83,7 @@ public class RoutingService : IRoutingService
               WHERE route_id = @RouteId",
             new { RouteId = routeId });
 
-        if (route != null)
+        /*if (route != null)
         {
             route.Segments = (await conn.QueryAsync<RouteSegment>(
                 @"SELECT 
@@ -94,12 +94,12 @@ public class RoutingService : IRoutingService
                   WHERE route_id = @RouteId
                   ORDER BY seq_order",
                 new { RouteId = routeId })).ToList();
-        }
+        }*/
 
         return route;
     }
 
-    /*public async Task<Route> GetRouteByName(String name)
+    public async Task<Route> GetRouteByName(String name)
     {
         var route = await conn.QuerySingleOrDefaultAsync<Route>(
             @"SELECT 
@@ -111,7 +111,7 @@ public class RoutingService : IRoutingService
               WHERE route_name = @RouteName",
             new { RouteName = name });
 
-        if (route != null)
+        /*if (route != null)
         {
             route.Segments = (await conn.QueryAsync<RouteSegment>(
                 @"SELECT 
@@ -122,10 +122,10 @@ public class RoutingService : IRoutingService
                   WHERE route_name = @RouteName
                   ORDER BY seq_order",
                 new { RouteName = name })).ToList();
-        }
+        }*/
 
         return route;
-    }*/
+    }
 
     public async Task<List<Route>> GetAllRoutes()
     {
@@ -149,16 +149,16 @@ public class RoutingService : IRoutingService
                 {
                     RouteId = reader.GetInt32(0),
                     Name = reader.GetString(1),
-                    Geometry = reader.IsDBNull(2) ? null : new WKBReader().Read(reader.GetFieldValue<byte[]>(2)) as LineString,
+                    Geometry = reader.IsDBNull(2) ? null : new WKBReader().Read(reader.GetFieldValue<byte[]>(2)) as MultiLineString,
                     CreatedAt = reader.GetDateTime(3),
-                    Segments = null
+                    //Segments = null
                 };
                 routes.Add(route);
             }
         }
 
         // 2. Опционально: получаем сегменты для каждого маршрута
-        foreach (var route in routes)
+        /*foreach (var route in routes)
         {
             route.Segments = route.Segments = (await conn.QueryAsync<RouteSegment>(
                     @"SELECT 
@@ -169,7 +169,7 @@ public class RoutingService : IRoutingService
                     WHERE route_id = @RouteId
                     ORDER BY seq_order",
                     new { route.RouteId })).ToList();
-        }
+        }*/
 
         return routes;
     }
@@ -198,7 +198,7 @@ public class RoutingService : IRoutingService
                 new { route.RouteId },
                 transaction);
 
-            await conn.ExecuteAsync(
+            /*await conn.ExecuteAsync(
                 @"INSERT INTO route_segments (route_id, edge_id, seq_order)
                   VALUES (@RouteId, @EdgeId, @Sequence)",
                 route.Segments.Select(s => new {
@@ -206,7 +206,7 @@ public class RoutingService : IRoutingService
                     s.EdgeId,
                     s.Sequence
                 }),
-                transaction);
+                transaction);*/
 
             transaction.Commit();
         }
@@ -258,50 +258,56 @@ public class RoutingService : IRoutingService
             return null;
         }
 
-        // Вычисляем маршрут
-        var parameters = new {
-            Vertices = vertices,
-            PathsCount = vertices.Count - 1
-        };
+        MultiLineString geometry;
+        var subGeoms = new List<LineString> ();
+        var verticesArr = vertices.ToArray();
 
-        var result = await conn.QueryAsync<PathSegment>(
-            @"WITH dijkstra AS (
-                SELECT *
-                FROM pgr_dijkstraVia(
-                    'SELECT id, source, target, cost FROM routing_roads',
-                    @Vertices,
-                    directed := false
-                )
-            )
-            SELECT 
-                path_id AS PathId,
-                path_seq AS Sequence,
-                edge AS EdgeId,
-                node AS NodeId
-            FROM dijkstra
-            WHERE edge > 0",
-            new { Vertices = vertices.ToArray() });
-
-        // Собираем геометрию
-        var edges = result.Select(r => r.EdgeId).Distinct().ToArray();
-
-        var byteGeometry = await conn.QuerySingleAsync<byte[]>(
-            @"SELECT ST_AsBinary(ST_Transform(ST_LineMerge(ST_Union(geom)), 4326)) AS geom
-              FROM routing_roads
-              WHERE id = ANY(@Edges)",
-            new { Edges = edges });
-
-        if (new WKBReader().Read(byteGeometry) is not LineString geometry)
+        for (int i = 1; i < verticesArr.Length; ++i)
         {
-            throw new Exception("Geometry is null!");
+            var byteGeometry = await conn.QuerySingleAsync<byte[]>(
+            @"WITH dijkstra_result AS (
+                SELECT edge, path_seq, node
+                    FROM pgr_bdDijkstra(
+                        'SELECT id, source, target, cost, reverse_cost FROM routing_roads',
+                        @Start,
+                        @End,
+                        directed := false
+                    )
+                    WHERE edge > 0
+            ),
+            get_geom AS (
+                SELECT path_seq,
+                    CASE 
+                        WHEN r.source = d.node THEN r.geom 
+                        ELSE ST_Reverse(r.geom) 
+                    END AS route_geometry
+                FROM dijkstra_result d
+                JOIN routing_roads r ON d.edge = r.id
+                ORDER BY d.path_seq
+            )
+            SELECT ST_AsBinary(ST_Transform(ST_LineMerge(ST_Union(route_geometry ORDER BY path_seq)), 4326)) FROM get_geom;",
+            new { Start = verticesArr[i - 1], End = verticesArr[i] });
+
+            if (byteGeometry == null) {
+                continue;
+            }
+
+            var subGeom = new WKBReader().Read(byteGeometry);
+    
+            if (subGeom is LineString lineString)
+            {
+                subGeoms.Add(lineString);
+            }
         }
+
+        geometry = new MultiLineString(subGeoms.ToArray());
 
         // Создаем маршрут
         var route = new Route
         {
             Name = name,
             Geometry = geometry,
-            Segments = result
+            /*Segments = result
                 .GroupBy(r => r.PathId)
                 .SelectMany(g => g
                     .Select((r, idx) => new RouteSegment
@@ -309,7 +315,7 @@ public class RoutingService : IRoutingService
                         EdgeId = r.EdgeId,
                         Sequence = idx + 1
                     }))
-                .ToList()
+                .ToList()*/
         };
 
         route.RouteId = await CreateRoute(route);
@@ -341,7 +347,7 @@ public class RoutingService : IRoutingService
             .ToList();
             
         // Для каждого маршрута загружаем сегменты
-        foreach (var route in routes)
+        /*foreach (var route in routes)
         {
             route.Segments = (await conn.QueryAsync<RouteSegment>(
                     @"SELECT 
@@ -353,7 +359,7 @@ public class RoutingService : IRoutingService
               ORDER BY seq_order",
                     new { RouteId = route.RouteId }))
                 .ToList();
-        }
+        }*/
 
         return routes;
     }

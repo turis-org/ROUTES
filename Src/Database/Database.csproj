@@ -10,6 +10,7 @@
   <ItemGroup>
     <PackageReference Include="dapper" Version="2.1.66" />
     <PackageReference Include="dotnetenv" Version="3.1.1" />
+    <PackageReference Include="geojson" Version="2.3.1" />
     <PackageReference Include="GeoJSON.Net" Version="1.4.1" />
     <PackageReference Include="NetTopologySuite" Version="2.6.0" />
     <PackageReference Include="npgsql" Version="9.0.3" />

@@ -7,26 +7,38 @@ public static class TestData
 {
     public static List<Coordinate> GetTwoPoints => new()
     {
-        new Coordinate(54.997792, 82.916929),
-        new Coordinate(54.980895, 83.035171)
+        new Coordinate(55.759471, 37.616917),
+        new Coordinate(55.743097, 37.614078)
     };
 
     public static List<Coordinate> GetThreePoints => new()
     {
-        new Coordinate(54.997792, 82.916929),
-        new Coordinate(54.994992, 82.965884),
-        new Coordinate(54.980895, 83.035171)
+        new Coordinate(55.759471, 37.616917),
+        new Coordinate(55.743097, 37.614078),
+        new Coordinate(55.730466, 37.604430)
+    };
+
+    public static List<Coordinate> GetMultiplePoints => new()
+    {
+        new Coordinate(55.759471, 37.616917),
+        new Coordinate(55.743097, 37.614078),
+        new Coordinate(55.730466, 37.604430),
+        new Coordinate(55.719607, 37.556047),
+        new Coordinate(55.756103, 37.574292),
+        new Coordinate(55.765144, 37.591503),
+        new Coordinate(55.764212, 37.602364),
+        new Coordinate(55.761350, 37.609056)
     };
 
     public static List<Coordinate> GetInvalidPoints => new()
     {
-        new Coordinate(83.035171, 54.980895),
-        new Coordinate(82.965884, 54.994992)
+        new Coordinate(37.602364, 55.764212),
+        new Coordinate(37.609056, 55.761350)
     };
 
     public static List<Coordinate> GetOnePoint => new()
     {
-        new Coordinate(54.997792, 82.916929),
+        new Coordinate(55.759471, 37.616917)
     };
 
     public static List<Coordinate> GetEmptyPoints => new();

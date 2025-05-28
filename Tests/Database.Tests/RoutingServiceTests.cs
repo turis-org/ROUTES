@@ -7,7 +7,6 @@ using GeoJSON.Net.Geometry;
 using Npgsql;
 using System.Collections.Frozen;
 using System.Collections.Immutable;
-
 namespace Database.Tests;
 
 public class RoutingServiceTests

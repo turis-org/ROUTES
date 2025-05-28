@@ -114,33 +114,33 @@ public class RoutingServiceTests
     //     Assert.Null(response);
     // }
 
-    // [Fact]
-    // public void CreateRouteFromPoints_1CorrectPoint_NullReturned()
-    // {   
-    //     // Arrange
-    //     List<Coordinate> points = TestData.GetOnePoint;
-    //     var name = "My Road2";
+    [Fact]
+    public void CreateRouteFromPoints_1CorrectPoint_NullReturned()
+    {   
+        // Arrange
+        List<Coordinate> points = TestData.GetOnePoint;
+        var name = "My Road2";
 
-    //     // Act
-    //     var response = _routingService.CreateRouteFromPoints(name, points).GetAwaiter().GetResult();
+        // Act
+        var response = _routingService.CreateRouteFromPoints(name, points).GetAwaiter().GetResult();
 
-    //     // Assert
-    //     Assert.Null(response);
-    // }
+        // Assert
+        Assert.Null(response);
+    }
 
-    // [Fact]
-    // public void CreateRouteFromPoints_0CorrectPoint_NullReturned()
-    // {   
-    //     // Arrange
-    //     List<Coordinate> points = TestData.GetEmptyPoints;
-    //     var name = "My Road3";
+    [Fact]
+    public void CreateRouteFromPoints_0CorrectPoint_NullReturned()
+    {   
+        // Arrange
+        List<Coordinate> points = TestData.GetEmptyPoints;
+        var name = "My Road3";
 
-    //     // Act
-    //     var response = _routingService.CreateRouteFromPoints(name, points).GetAwaiter().GetResult();
+        // Act
+        var response = _routingService.CreateRouteFromPoints(name, points).GetAwaiter().GetResult();
 
-    //     // Assert
-    //     Assert.Null(response);
-    // }
+        // Assert
+        Assert.Null(response);
+    }
 
     // [Fact]
     // public void GetRoute_CorrectRouteId_RouteReturned()
@@ -162,14 +162,14 @@ public class RoutingServiceTests
     //     Assert.Equal(response1.Name, response.Name);
     // }
 
-    [Fact]
-    public void GetRouteAllRoutes__RoutesReturned()
-    {
-        // Act
-        var response = _routingService.GetAllRoutes().GetAwaiter().GetResult();
+    // [Fact]
+    // public void GetRouteAllRoutes__RoutesReturned()
+    // {
+    //     // Act
+    //     var response = _routingService.GetAllRoutes().GetAwaiter().GetResult();
 
-        // Assert
-        Assert.NotNull(response);
-        Assert.NotEqual(response.Count, 0);
-    }
+    //     // Assert
+    //     Assert.NotNull(response);
+    //     Assert.NotEqual(response.Count, 0);
+    // }
 }

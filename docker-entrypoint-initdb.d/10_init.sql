@@ -11,12 +11,6 @@ CREATE TABLE IF NOT EXISTS routing_roads (
     reverse_cost DOUBLE PRECISION
 );
 
--- Проверить текущий SRID геометрии
-SELECT ST_SRID(geom) FROM routing_roads LIMIT 1;
-
--- Если возвращает 0, нужно установить правильный SRID (например, 4326 для WGS84)
-SELECT UpdateGeometrySRID('routing_roads', 'geom', 4326);
-
 -- Заполняем таблицу данными дорог из OSM
 INSERT INTO routing_roads (osm_id, name, highway, geom)
 SELECT 
@@ -31,6 +25,15 @@ WHERE highway IN (
     'motorway_link', 'trunk_link', 'primary_link',
     'secondary_link', 'tertiary_link'
 );
+
+-- -- Проверить текущий SRID геометрии
+-- SELECT ST_SRID(geom) FROM routing_roads LIMIT 1;
+
+-- -- Если возвращает 0, нужно установить правильный SRID (например, 4326 для WGS84)
+-- SELECT UpdateGeometrySRID('routing_roads', 'geom', 4326);
+
+UPDATE routing_roads SET geom = ST_SetSRID(geom, 4326)
+WHERE ST_SRID(geom) = 0;
 
 -- Создание топологии (заполняет таблицу routing_roads и создаёт ещё одну таблицу routing_roads_vertices_pgr с вершинами графа (source и target как раз ссылки на них))
 SELECT pgr_createTopology('routing_roads', 0.00001, 'geom', 'id');

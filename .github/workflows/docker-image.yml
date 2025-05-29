@@ -2,11 +2,70 @@ name: Docker Image CI
 
 on:
   push:
-    branches: [ "master", "develop" ]
+    branches: [ "main", "develop", "feature/**", "fix/**" ]
   pull_request:
     branches: [ "master", "develop"]
+env:
+  TEST_RESULTS_DIR: "./test-results"
 jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Restore dependencies
+        run: |
+          cd Tests/Database.Tests
+          dotnet restore
+
+      - name: Create results directory
+        run: mkdir -p ${{ env.TEST_RESULTS_DIR }}
+
+      - name: Set up Docker Compose
+        uses: docker/setup-compose-action@v1
+       
+      - name: Run Docker Compose
+        run: |
+          docker compose --env-file .env up -d --build postgres
+          # docker compose --env-file .env up -d postgres
+          # docker compose ps --services --filter "status=healthy" | grep -q postgres
+          docker compose port postgres 5432
+          docker logs routes_db
+          
+          timeout 120s bash -c 'until docker exec routes_db pg_isready; do sleep 2; done'   
+          docker exec routes_db psql -U admin -d turis -c "CREATE EXTENSION IF NOT EXISTS pgrouting;"
+          docker exec routes_db psql -U admin -d turis -c "\dt"
+          docker exec -i routes_db psql -U admin -d turis -f /docker-entrypoint-initdb.d/10_init.sql
+          docker exec routes_db psql -U admin -d turis -c "\dt"
+
+      # - name: Start PostgreSQL
+      #   run: |
+      #     docker-compose -f docker-compose.yml up -d postgres
+      #     sleep 10  # Ожидание старта БД
+
+      - name: Run unit tests with results
+        run: |
+          cd Tests/Database.Tests
+          dotnet test \
+            --no-restore \
+            --configuration Release \
+            --logger "trx;LogFileName=unit_tests.trx" \
+            --results-directory ${{ env.TEST_RESULTS_DIR }}
+
+      - name: Publish test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-results
+          path: ${{ env.TEST_RESULTS_DIR }}/**/*
   build:
+    needs: tests 
     runs-on: ubuntu-latest
 
     steps:
@@ -17,3 +76,23 @@ jobs:
        
      - name: Run Docker Compose
        run: docker compose --env-file .env up -d --build
+       
+# name: Docker Image CI
+
+# on:
+#   push:
+#     branches: [ "master", "develop" ]
+#   pull_request:
+#     branches: [ "master", "develop"]
+# jobs:
+#   build:
+#     runs-on: ubuntu-latest
+
+#     steps:
+#      - uses: actions/checkout@v4
+     
+#      - name: Set up Docker Compose
+#        uses: docker/setup-compose-action@v1
+       
+#      - name: Run Docker Compose
+#        run: docker compose --env-file .env up -d --build

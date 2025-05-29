@@ -12,11 +12,13 @@ exec_psql "CREATE EXTENSION IF NOT EXISTS postgis;"
 exec_psql "CREATE EXTENSION IF NOT EXISTS hstore;"
 exec_psql "CREATE EXTENSION IF NOT EXISTS pgrouting;"
 
+touch /tmp/flat_node
+
 # Импорт данных в PostgreSQL
 for map in $(ls /tmp/maps)
 do
 echo $map
-nohup osm2pgsql -d $POSTGRES_DB -U $POSTGRES_USER --cache=1000 --number-processes=4 --create --multi-geometry --slim --drop --hstore --proj 3857 /tmp/maps/$map
+nohup osm2pgsql -F /tmp/flat_node -d $POSTGRES_DB -U $POSTGRES_USER --cache=1000 --number-processes=4 --create --multi-geometry --slim --drop --hstore --proj 3857 /tmp/maps/$map
 done
 
 if [ ${IS_MASTER} = "true" ]; then

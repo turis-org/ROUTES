@@ -11,6 +11,12 @@ CREATE TABLE IF NOT EXISTS routing_roads (
     reverse_cost DOUBLE PRECISION
 );
 
+-- Проверить текущий SRID геометрии
+SELECT ST_SRID(geom) FROM routing_roads LIMIT 1;
+
+-- Если возвращает 0, нужно установить правильный SRID (например, 4326 для WGS84)
+SELECT UpdateGeometrySRID('routing_roads', 'geom', 4326);
+
 -- Заполняем таблицу данными дорог из OSM
 INSERT INTO routing_roads (osm_id, name, highway, geom)
 SELECT 

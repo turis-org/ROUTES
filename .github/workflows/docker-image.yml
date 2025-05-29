@@ -11,6 +11,9 @@ jobs:
   tests:
     runs-on: ubuntu-latest
     steps:
+      - name: Remove previous volumes
+        run: docker volume prune -f
+
       - name: Checkout code
         uses: actions/checkout@v4
 

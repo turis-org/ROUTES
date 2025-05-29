@@ -18,7 +18,7 @@ public class RoutingServiceTests
     {
         var connStr = new NpgsqlConnectionStringBuilder
         {
-            Host = Env.GetString("DB_HOST", "localhost"),
+            Host = Env.GetString("DB_HOST", "*"),
             Port = Env.GetInt("PG_PORT", 5432),
             Database = Env.GetString("PG_DATABASE", "turis"),
             Username = Env.GetString("PG_USER", "admin"),

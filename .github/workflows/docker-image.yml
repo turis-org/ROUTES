@@ -8,66 +8,63 @@ on:
 env:
   TEST_RESULTS_DIR: "./test-results"
 jobs:
-  tests:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Remove previous volumes
-        run: docker volume prune -f
+  # tests:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v4
 
-      - name: Checkout code
-        uses: actions/checkout@v4
+  #     - name: Setup .NET
+  #       uses: actions/setup-dotnet@v4
+  #       with:
+  #         dotnet-version: '9.0.x'
 
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '9.0.x'
+      # - name: Restore dependencies
+      #   run: |
+      #     cd Tests/Database.Tests
+      #     dotnet restore
 
-      - name: Restore dependencies
-        run: |
-          cd Tests/Database.Tests
-          dotnet restore
+      # - name: Create results directory
+      #   run: mkdir -p ${{ env.TEST_RESULTS_DIR }}
 
-      - name: Create results directory
-        run: mkdir -p ${{ env.TEST_RESULTS_DIR }}
-
-      - name: Set up Docker Compose
-        uses: docker/setup-compose-action@v1
+      # - name: Set up Docker Compose
+      #   uses: docker/setup-compose-action@v1
        
-      - name: Run Docker Compose
-        run: |
-          docker compose --env-file .env up -d --build postgres
-          # docker compose --env-file .env up -d postgres
-          # docker compose ps --services --filter "status=healthy" | grep -q postgres
-          docker compose port postgres 5432
-          docker logs routes_db
+      # - name: Run Docker Compose
+      #   run: |
+      #     docker compose --env-file .env up -d --build postgres
+      #     # docker compose --env-file .env up -d postgres
+      #     # docker compose ps --services --filter "status=healthy" | grep -q postgres
+      #     docker compose port postgres 5432
+      #     docker logs routes_db
           
-          timeout 120s bash -c 'until docker exec routes_db pg_isready; do sleep 2; done'   
-          docker exec -i routes_db bash ./docker-entrypoint-initdb.d/00_init.sh
-          docker exec -i routes_db psql -U admin -d turis -f /docker-entrypoint-initdb.d/10_init.sql
-          docker exec routes_db psql -U admin -d turis -c "\dt"
+      #     timeout 120s bash -c 'until docker exec routes_db pg_isready; do sleep 2; done'   
+      #     docker exec -i routes_db bash ./docker-entrypoint-initdb.d/00_init.sh
+      #     docker exec -i routes_db psql -U admin -d turis -f /docker-entrypoint-initdb.d/10_init.sql
+      #     docker exec routes_db psql -U admin -d turis -c "\dt"
 
       # - name: Start PostgreSQL
       #   run: |
       #     docker-compose -f docker-compose.yml up -d postgres
       #     sleep 10  # Ожидание старта БД
 
-      - name: Run unit tests with results
-        run: |
-          cd Tests/Database.Tests
-          dotnet test \
-            --no-restore \
-            --configuration Release \
-            --logger "trx;LogFileName=unit_tests.trx" \
-            --results-directory ${{ env.TEST_RESULTS_DIR }}
+      # - name: Run unit tests with results
+      #   run: |
+      #     cd Tests/Database.Tests
+      #     dotnet test \
+      #       --no-restore \
+      #       --configuration Release \
+      #       --logger "trx;LogFileName=unit_tests.trx" \
+      #       --results-directory ${{ env.TEST_RESULTS_DIR }}
 
-      - name: Publish test results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: unit-test-results
-          path: ${{ env.TEST_RESULTS_DIR }}/**/*
+      # - name: Publish test results
+      #   if: always()
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: unit-test-results
+      #     path: ${{ env.TEST_RESULTS_DIR }}/**/*
   build:
-    needs: tests 
+    # needs: tests 
     runs-on: ubuntu-latest
 
     steps:

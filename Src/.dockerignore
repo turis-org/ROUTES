@@ -1,0 +1,6 @@
+**/.dockerignore
+**/.github
+**/bin
+**/obj
+**/appsettings.Development.json
+Dockerfile

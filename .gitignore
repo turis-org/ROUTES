@@ -1,0 +1,6 @@
+.backup
+*.vscode
+*obj
+*bin
+*Test.cs
+*route.html
